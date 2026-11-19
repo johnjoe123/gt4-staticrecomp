@@ -104,7 +104,7 @@ pub async fn run(options: JoinOptions, mut on_event: impl FnMut(&Event)) -> Resu
             received = link.recv_from(&mut datagram) => {
                 let (len, from) = received.map_err(|e| format!("game link failed: {e}"))?;
                 game = Some(from);
-                if len >= crate::switch::MIN_FRAME && len <= crate::switch::MAX_FRAME {
+                if (crate::switch::MIN_FRAME..=crate::switch::MAX_FRAME).contains(&len) {
                     sink.send(Message::Binary(datagram[..len].to_vec().into())).await.map_err(|e| format!("lost the server: {e}"))?;
                 }
             }

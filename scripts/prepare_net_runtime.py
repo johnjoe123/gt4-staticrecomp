@@ -94,6 +94,8 @@ EDITS = ((INCLUDES_OLD, INCLUDES_NEW), (HELPERS_OLD, HELPERS_NEW), (DMA_OLD, DMA
 
 
 def derive(source: str) -> str:
+    if 'net_runtime.hpp' in source:
+        raise SystemExit('the input iop/hw.cpp already has the net capsule edits')
     for old, _ in EDITS:
         if source.count(old) != 1:
             raise SystemExit(f'edit point not found exactly once in the input iop/hw.cpp: {old[:60]!r}')

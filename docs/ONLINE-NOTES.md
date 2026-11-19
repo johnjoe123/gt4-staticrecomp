@@ -2,6 +2,10 @@
 
 2026-10-14, slice 151. Research only; nothing implemented.
 
+2026-11-19: option (b) below (a DEV9/SMAP model, with the game's own IP stack on top) plus a lobby server is
+written and host-tested, not yet run in the game: [ONLINE-LAN](ONLINE-LAN.md). A community server for the beta's
+online mode exists (PSRewired, used from PCSX2 through a custom DNS address); it would need the same adapter.
+
 - Retail GT4 shipped without an official online service. It supports LAN
   battle for up to 6 consoles through the PS2 Network Adaptor (High
   confidence, secondary sources).
