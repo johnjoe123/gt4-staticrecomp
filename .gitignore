@@ -31,3 +31,4 @@ __pycache__/
 
 # Owner's community patch (never committed).
 *.xdelta
+/net/target/
