@@ -292,6 +292,38 @@ if(GT4_USB_RUNTIME_SOURCE)
         INCLUDE_DIRECTORIES "${DONOR}/runtime/src/iop;${CMAKE_CURRENT_SOURCE_DIR}")
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${usb_capsule}/hw.cpp")
 endif()
+# LAN over the internet (docs/ONLINE-LAN.md): net capsule (scripts/prepare_net_runtime.py). Replaces iop/hw.cpp with the
+# derived source whose DEV9/SPEED registers and DMA channel 8 reach the Network Adaptor model of native/net_smap.cpp.
+# The capsule is derived from the USB capsule's hw.cpp when both are wanted (--usb-capsule), so give this one alone to
+# CMake's hw.cpp slot: it takes precedence over GT4_USB_RUNTIME_SOURCE. Without GT4_NET=1 the file answers as its input.
+set(GT4_NET_RUNTIME_SOURCE "" CACHE PATH "Verified net capsule: derived iop/hw.cpp and runtime.json")
+if(GT4_NET_RUNTIME_SOURCE)
+    get_filename_component(net_capsule "${GT4_NET_RUNTIME_SOURCE}" ABSOLUTE)
+    if(NOT EXISTS "${net_capsule}/hw.cpp" OR NOT EXISTS "${net_capsule}/runtime.json")
+        message(FATAL_ERROR "The net capsule needs hw.cpp and runtime.json")
+    endif()
+    file(READ "${net_capsule}/runtime.json" net_manifest)
+    string(JSON net_expected GET "${net_manifest}" hw_sha256)
+    file(SHA256 "${net_capsule}/hw.cpp" net_actual)
+    if(NOT net_actual STREQUAL net_expected)
+        message(FATAL_ERROR "Net hw.cpp differs from its runtime.json pin")
+    endif()
+    if(GT4_USB_RUNTIME_SOURCE)
+        # Both capsules own iop/hw.cpp: the net capsule must have been derived from this USB capsule.
+        string(JSON net_usb_pin ERROR_VARIABLE net_usb_error GET "${net_manifest}" usb_hw_sha256)
+        if(net_usb_error OR NOT net_usb_pin STREQUAL usb_actual)
+            message(FATAL_ERROR "The net capsule was not derived from GT4_USB_RUNTIME_SOURCE (prepare_net_runtime.py --usb-capsule)")
+        endif()
+    endif()
+    list(FILTER RUNTIME_FILES EXCLUDE REGEX "/iop/hw\\.cpp$")
+    if(GT4_USB_RUNTIME_SOURCE)
+        list(REMOVE_ITEM RUNTIME_FILES "${usb_capsule}/hw.cpp")
+    endif()
+    list(APPEND RUNTIME_FILES "${net_capsule}/hw.cpp")
+    set_source_files_properties("${net_capsule}/hw.cpp" PROPERTIES
+        INCLUDE_DIRECTORIES "${DONOR}/runtime/src/iop;${CMAKE_CURRENT_SOURCE_DIR}")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${net_capsule}/hw.cpp")
+endif()
 # TASK-017 (slice205 v1, slice206 v2): license demo guard capsule (scripts/prepare_license_guard.py). Replaces the donor
 # dispatch.cpp (guard at both license loaders' demo-input calls, native/license_guard.*), kernel.cpp (halt
 # dump, off unless GT4_HALT_DUMP=1) and iop/cdvdfsv.cpp (FSV read trace, off unless GT4_FSV_TRACE=1). Every derived
@@ -387,7 +419,17 @@ add_executable(usb_dfp_fixture usb_dfp_fixture.cpp)
 target_link_libraries(usb_dfp_fixture PRIVATE gt4_usb)
 target_compile_options(usb_dfp_fixture PRIVATE /W4)
 add_test(NAME native_usb_dfp COMMAND $<TARGET_FILE:usb_dfp_fixture>)
-target_link_libraries(ps2runtime_vulkan PUBLIC gt4_pacing gt4_quickfix gt4_install_paths gt4_vulkan_extensions gt4_usb)
+# LAN over the internet: the Network Adaptor model, its UDP link to the gt4net bridge and the machine's one instance
+# (used by the net capsule). The fixture drives the model the way a guest driver does.
+add_library(gt4_net STATIC net_smap.cpp net_link.cpp net_runtime.cpp)
+target_compile_options(gt4_net PRIVATE /W4)
+target_include_directories(gt4_net PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(gt4_net PUBLIC ws2_32)
+add_executable(net_smap_fixture net_smap_fixture.cpp)
+target_link_libraries(net_smap_fixture PRIVATE gt4_net)
+target_compile_options(net_smap_fixture PRIVATE /W4)
+add_test(NAME native_net_smap COMMAND $<TARGET_FILE:net_smap_fixture>)
+target_link_libraries(ps2runtime_vulkan PUBLIC gt4_pacing gt4_quickfix gt4_install_paths gt4_vulkan_extensions gt4_usb gt4_net)
 # TASK-059 (slice200): installed-folder paths (<exe folder>\shaders, <exe folder>\gs\gt4-gs.exe) and --portable-check.
 add_library(gt4_install_paths STATIC install_paths.cpp)
 target_compile_options(gt4_install_paths PRIVATE /W4)

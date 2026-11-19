@@ -1,0 +1,22 @@
+# systemd unit for a gt4net lobby server on a VPS.
+#   sudo install -m 755 gt4net /usr/local/bin/gt4net
+#   sudo install -m 644 gt4net.service /etc/systemd/system/gt4net.service
+#   sudo systemctl enable --now gt4net
+# Players then join with  host:47800 . To serve it through Cloudflare Tunnel instead of an open port, change --bind to
+# 127.0.0.1:47800 and point the tunnel's ingress at http://127.0.0.1:47800 .
+[Unit]
+Description=GT4Recomp lobby server (gt4net)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/gt4net server --bind 0.0.0.0:47800
+Restart=on-failure
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

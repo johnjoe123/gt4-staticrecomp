@@ -3430,3 +3430,12 @@ compatibility pin (executable, target, disc, renderer, settings); a disposable d
 an uninterrupted run at the same guest boundary; a coordinated capture boundary (EE, VU and GS workers fenced, GPU work finished,
 in-flight card and disc I/O settled); a CoreGS 2.0 logical state independent of Vulkan handles (the external GS process separate
 or excluded); then the launcher's save and resume flow. Effort is not measured. Starts only on the owner's word after 1.3.0.
+
+### LAN battle over the internet (contributor proposal, unnumbered; code and host tests, in-game test open)
+
+Branch `task/online-lan-tunnel` (fork). Goal: player-hosted lobbies for the game's own LAN battle mode, over the internet.
+Design, switches, build and test plan: `docs/ONLINE-LAN.md`. Parts: a Network Adaptor model (`native/net_smap.*`, CTest
+`native_net_smap`), the net capsule (`scripts/prepare_net_runtime.py`, `GT4_NET_RUNTIME_SOURCE`,
+`tests/python/test_net_runtime.py`) and the lobby server and bridge (`net/`, `cargo test`). Off unless `GT4_NET=1`.
+State (2026-11-19): written and host-tested on Linux (g++ with sanitizers, cargo test, Python); **not built with clang-cl,
+not run in the game**. Open: the owner-PC test plan in the document, then a launcher interface (Host and Join).
